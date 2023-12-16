@@ -1,3 +1,7 @@
+build/
+testdb.sql
+.gradle
+
 # Compiled class file
 *.class
 
