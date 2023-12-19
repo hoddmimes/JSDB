@@ -1,5 +1,7 @@
 package com.hoddmimes.jsql;
 
+import com.google.gson.JsonObject;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -78,7 +80,17 @@ public class JSDBKey
             throw new IllegalArgumentException("Invalid Key Type");
         }
 
-
+        String getSqlValue( JsonObject pObject ) throws JSDBException
+        {
+            if (!pObject.has( this.mId)) {
+                throw new JSDBException("Json object does not contain key field \"" + this.mId + "\"");
+            }
+            String value = pObject.get( this.mId ).getAsString();
+            if (this.mType == String.class) {
+                return "'" + value + "'";
+            }
+            return value;
+        }
 
          public String getId() {
             return mId;
