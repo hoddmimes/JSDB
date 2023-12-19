@@ -271,15 +271,21 @@ public class JSDBCollection {
         Data access methods
      ================================ */
 
-    public List<JsonObject> findAll(int pMaxElements) throws JSDBException {
+    public List<JsonObject> findAll(int pOffset, int pMaxElements) throws JSDBException {
         String sql = "SELECT * FROM " + this.mName;
+        int tCount = 0;
         List<JsonObject> tResult = new ArrayList<>();
         try {
             Statement stmt = mDbConnection.createStatement();
             ResultSet rs = stmt.executeQuery(sql);
             while (rs.next() && tResult.size() < pMaxElements) {
-                String jsonString = new String(rs.getBytes(COL_SQL_DATA), StandardCharsets.UTF_8);
-                tResult.add(JsonParser.parseString(jsonString).getAsJsonObject());
+                if (tCount >= pOffset) {
+                    String jsonString = new String(rs.getBytes(COL_SQL_DATA), StandardCharsets.UTF_8);
+                    tResult.add(JsonParser.parseString(jsonString).getAsJsonObject());
+                    if (tResult.size() >= pMaxElements) {
+                        return tResult;
+                    }
+                }
             }
         } catch (Exception e) {
             throw new JSDBException(e.getMessage(), e);
@@ -288,7 +294,7 @@ public class JSDBCollection {
     }
 
     public List<JsonObject> findAll() throws JSDBException {
-        return findAll(Integer.MAX_VALUE);
+        return findAll(0, Integer.MAX_VALUE);
     }
 
 
