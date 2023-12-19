@@ -57,7 +57,7 @@ public class TestDB
             log("filter-update updated records:  " + tCount );
 
         } catch (JSDBException e) {
-
+            e.printStackTrace();
         }
     }
 
