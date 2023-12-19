@@ -35,7 +35,7 @@ public class JSDB
         }
     }
 
-    public void createDatabase(String pSqlFile) throws JSDBException {
+    public static void createDatabase(String pSqlFile) throws JSDBException {
         String url = "jdbc:sqlite:" + pSqlFile;
 
         File dbFile = new File( pSqlFile );
@@ -44,10 +44,10 @@ public class JSDB
         }
 
         try {
-            mDbConnection = DriverManager.getConnection(url);
-            if (mDbConnection != null) {
-                DatabaseMetaData meta = mDbConnection.getMetaData();
-                createCollectionTables();
+            Connection tDbConnection = DriverManager.getConnection(url);
+            if (tDbConnection != null) {
+                createCollectionTables( tDbConnection);
+                tDbConnection.close();
             }
 
         } catch (SQLException e) {
@@ -55,11 +55,11 @@ public class JSDB
         }
     }
 
-    private void createCollectionTables() throws JSDBException
+    private static void createCollectionTables( Connection pConnection) throws JSDBException
     {
         String sql = "CREATE TABLE " + JSDBCollection.COL_SQL_TABLE + " (" + JSDBCollection.COL_SQL_NAME + " STRING PRIMARY KEY);";
         try {
-            Statement stmt = mDbConnection.createStatement();
+            Statement stmt = pConnection.createStatement();
             // create a new table
             stmt.execute(sql.toString());
         }
@@ -70,7 +70,7 @@ public class JSDB
         sql = "CREATE TABLE " + JSDBKey.KEY_SQL_TABLE + " (" + JSDBKey.KEY_SQL_COLLECTION + " STRING, " + JSDBKey.KEY_SQL_ID + " STRING, " + JSDBKey.KEY_SQL_CLASS +" STRING, " +
             JSDBKey.KEY_SQL_IS_UNIQUE + " INTEGER, " + JSDBKey.KEY_SQL_IS_PRIMARY + " INTEGER);" ;
         try {
-            Statement stmt = mDbConnection.createStatement();
+            Statement stmt = pConnection.createStatement();
             // create a new table
             stmt.execute(sql.toString());
         }
