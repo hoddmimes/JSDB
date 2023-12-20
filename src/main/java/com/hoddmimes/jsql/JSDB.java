@@ -2,6 +2,7 @@ package com.hoddmimes.jsql;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.sqlite.SQLiteConfig;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -23,7 +24,22 @@ public class JSDB
         }
 
         try {
-            mDbConnection = DriverManager.getConnection(url);
+            try {Class.forName("org.sqlite.JDBC");}
+            catch( Exception e) {
+               e.printStackTrace();
+            }
+            // Set all pragmas
+            SQLiteConfig tConfig = new SQLiteConfig();
+            tConfig.setJournalMode(SQLiteConfig.JournalMode.WAL);
+
+            tConfig.setTempStore(SQLiteConfig.TempStore.MEMORY);
+            tConfig.setSynchronous(SQLiteConfig.SynchronousMode.NORMAL);
+            tConfig.enforceForeignKeys(false);
+            tConfig.enableCountChanges(false);
+
+
+
+            mDbConnection = DriverManager.getConnection(url, tConfig.toProperties());
             if (mDbConnection != null) {
                 DatabaseMetaData meta = mDbConnection.getMetaData();
                 //System.out.println("The driver name is " + meta.getDriverName());
