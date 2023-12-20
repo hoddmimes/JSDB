@@ -49,11 +49,12 @@ public class TestDB
             jObjects = tCollection.find( "($eq: (k1, 500))");
             assertEquals(jObjects.get(0).get("tstdata").getAsString(), "version 3");
 
-            JsonObject jObj = new JsonObject();
-            jObj.addProperty("rndnum", 28);
-            jObj.addProperty("tstdata", "version 4");
+            JsonObject jUpdateObject = new JsonObject();
+            jUpdateObject.addProperty("rndnum", 28);
+            jUpdateObject.addProperty("tstdata", "version 4");
 
-            int tCount = tCollection.update("($and: ($and: ($gt: (k1, 100)) ($lte: (k1, 150))) ($gt: (rndnum, 5)))", jObj);
+            // Update all object where (k1 > 100 and k1 <= 150) and (randnum > 5)
+            int tCount = tCollection.update("($and: ($and: ($gt: (k1, 100)) ($lte: (k1, 150))) ($gt: (rndnum, 5)))", jUpdateObject);
             log("filter-update updated records:  " + tCount );
 
         } catch (JSDBException e) {

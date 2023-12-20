@@ -121,10 +121,15 @@ The logical operation on data field are $GT:,$GTE:,$LT:,$LTE:,$NE:,$EQ:,$LIKE:
 For booleans the $NE:,$EQ: operators are the only applicable ones.
 The $LIKE: operator is only applicable for String fields, and have the save semantic as SQL LIKE.
 
-
+It's possible to specify fields in Json object substructures. The character "." is used as separator of structures 
+```JSON
+    {"foo": {"bar" : {"frotz" : 4711}}}
+}
+```
+_The notation for addressing the field 'frotz' is equivalent to "foo.bar.frotz"_
 
 _Note!_ if a field specified is not a key in the collection. The filter needs to be matched agains all 
-JsonObjects in the collection. Otherwise the SQL filter can be applied directly with better performance.
+JsonObjects in the collection, otherwise the SQL filter can be applied directly with better performance.
 
 
 
