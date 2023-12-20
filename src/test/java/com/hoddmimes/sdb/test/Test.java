@@ -54,10 +54,10 @@ public class Test {
 
     private void test() {
         createDatabase();
-        loadDatabase( 1000 );
+        loadDatabase( 100000 );
         //find( "($gt: (k1, 970))", 2000 );
         //find( "($and: ($gte: (k1,250)) ($eq: (k2,'XYZ')))", 2000 );
-        find( "($and: ($gte: (k1,250)) ($gt: (intValue, 50)))", 2000 );
+        find( "($and: ($eq: (k1,250)) ($eq: (k2, 'XYZ')))", 1 );
 
     }
 

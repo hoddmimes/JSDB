@@ -121,6 +121,8 @@ The logical operation on data field are $GT:,$GTE:,$LT:,$LTE:,$NE:,$EQ:,$LIKE:
 For booleans the $NE:,$EQ: operators are the only applicable ones.
 The $LIKE: operator is only applicable for String fields, and have the save semantic as SQL LIKE.
 
+The operator $AND: and $OR: are used to combined 2 or more logical expressions.
+
 It's possible to specify fields in Json object substructures. The character "." is used as separator of structures 
 ```JSON
     {"foo": {"bar" : {"frotz" : 4711}}}
