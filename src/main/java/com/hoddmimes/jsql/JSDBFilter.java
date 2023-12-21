@@ -15,7 +15,8 @@ public class JSDBFilter
 {
         static enum FILTER_LOGIC {$AND,$OR,$GT,$GTE,$LT,$LTE,$EQ,$LIKE,$NE,$DATA};
         private static final Pattern FILTER_LOGIC_PATTERN = Pattern.compile("(^\\$AND:|^\\$OR:|^\\$GT:|^\\$GTE:|^\\$LT:|^\\$LTE:|^\\$LIKE:|^\\$EQ:|^\\$NE:)", Pattern.CASE_INSENSITIVE);
-        private static final Pattern FILTER_NAME_VALUE = Pattern.compile("(\\w+)\\s*,(.+)");
+        private static final Pattern FILTER_NAME_VALUE = Pattern.compile( "([\\w|\\.]+)\\s*,(.+)");
+        
 
         private Node mRootNode = null;
 
@@ -215,7 +216,7 @@ public class JSDBFilter
 
 
 
-        boolean jsonMatch( JsonObject jObject ) throws JSDBException {
+        public boolean jsonMatch( JsonObject jObject ) throws JSDBException {
             return jsonMatch(jObject, this.mRootNode, new JsonTester());
         }
 
@@ -322,7 +323,7 @@ public class JSDBFilter
                     throw new JSDBException("Filter node is not a data node");
                 }
                 Matcher m = FILTER_NAME_VALUE.matcher(mData.toString().trim());
-                if (m.matches()) {
+                if (m.find()) {
                     return m.group(1);
                 } else {
                     throw new JSDBException("Invalid data name/value (" + mData.toString() + ")");
