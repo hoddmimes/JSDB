@@ -8,6 +8,7 @@ import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -82,6 +83,8 @@ public class JSDBCollection {
     }
 
 
+
+
     private boolean onlyKeyField(JSDBFilter pFilter) throws JSDBException {
         List<String> tFilterKeys = pFilter.getDataFields();
         if (tFilterKeys.size() == 0) {
@@ -95,7 +98,7 @@ public class JSDBCollection {
     }
 
 
-    private boolean isKeyField(String fid) throws JSDBException {
+     boolean isKeyField(String fid) throws JSDBException {
         for (JSDBKey k : this.mKeys) {
             if (k.getId().contentEquals(fid)) {
                 return true;
@@ -114,12 +117,16 @@ public class JSDBCollection {
         throw new RuntimeException("Could not found Collection key \"" + pFieldId + "\"");
     }
 
+
+
     private List<JsonObject> findWithJsonTesterLogic(JSDBFilter pFilter) throws JSDBException {
-        // We have to check each storec object against the filter
+
+        String sql = pFilter.createSqlHelperStatement(this);
+        //String sql = "SELECT DATA FROM " + mName + ";";
 
         try {
             Statement stmt = mDbConnection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT " + JSDBCollection.COL_SQL_DATA + " FROM " + this.mName + ";");
+            ResultSet rs = stmt.executeQuery(sql);
             List<JsonObject> tResult = new ArrayList<JsonObject>();
             while (rs.next()) {
                 JsonObject jObject = JsonParser.parseString(new String(rs.getBytes(JSDBCollection.COL_SQL_DATA), StandardCharsets.UTF_8)).getAsJsonObject();
@@ -133,9 +140,23 @@ public class JSDBCollection {
         }
     }
 
+    public int getCount() throws JSDBException {
+        try {
+            Statement stmt = mDbConnection.createStatement();
+            ResultSet rs  = stmt.executeQuery("SELECT COUNT(*) FROM " + this.mName + ";");
+            rs.next();
+            return rs.getInt(1);
+        } catch (SQLException e) {
+            throw new JSDBException(e.getMessage(), e);
+        }
+    }
+
+    public String getName() {
+        return mName;
+    }
     private List<JsonObject> findWithKeyLogic(JSDBFilter pFilter) throws JSDBException {
         // Filter based upon SQL keys
-        String sqlSelectString = pFilter.createSqlFindStatement(this);
+        String sqlSelectString = pFilter.createSqlSelectStatement(this);
         //System.out.println("select-sql: " + sqlSelectString);
         try {
             Statement stmt = mDbConnection.createStatement();
@@ -187,7 +208,7 @@ public class JSDBCollection {
     private int deleteWithKeyLogic(JSDBFilter pFilter) throws JSDBException {
         // Filter based upon SQL keys
         int tDeletedObjects = 0;
-        String sqlSelectString = pFilter.createSqlFindStatement(this);
+        String sqlSelectString = pFilter.createSqlSelectStatement(this);
         //System.out.println("select-sql: " + sqlSelectString);
         try {
             Statement stmt = mDbConnection.createStatement();
@@ -227,7 +248,7 @@ public class JSDBCollection {
     {
         int tUpdatedObjects = 0;
         // Filter based upon SQL keys
-        String sqlSelectString = pFilter.createSqlFindStatement(this);
+        String sqlSelectString = pFilter.createSqlSelectStatement(this);
         //System.out.println("select-sql: " + sqlSelectString);
         try {
             Statement stmt = mDbConnection.createStatement();

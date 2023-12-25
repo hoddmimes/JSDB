@@ -16,9 +16,9 @@ public class JSDBFilter
         static enum FILTER_LOGIC {$AND,$OR,$GT,$GTE,$LT,$LTE,$EQ,$LIKE,$NE,$DATA};
         private static final Pattern FILTER_LOGIC_PATTERN = Pattern.compile("(^\\$AND:|^\\$OR:|^\\$GT:|^\\$GTE:|^\\$LT:|^\\$LTE:|^\\$LIKE:|^\\$EQ:|^\\$NE:)", Pattern.CASE_INSENSITIVE);
         private static final Pattern FILTER_NAME_VALUE = Pattern.compile( "([\\w|\\.]+)\\s*,(.+)");
-        
+        final private  String cFilterString;
 
-        private Node mRootNode = null;
+        private FilterNode mRootNode;
 
 
         public static void main(String[] args) {
@@ -35,7 +35,12 @@ public class JSDBFilter
         }
 
     public JSDBFilter( String pFilterString ) throws JSDBException {
+        cFilterString = pFilterString;
         mRootNode = parse( pFilterString );
+    }
+    
+    public String getFilterString() {
+            return cFilterString;
     }
 
         @Override
@@ -43,10 +48,10 @@ public class JSDBFilter
             return displayNode( mRootNode );
         }
 
-        private String displayNode(Node pNode) {
+        private String displayNode(FilterNode pNode) {
             StringBuilder sb = new StringBuilder();
             sb.append( pNode.toString());
-            for (Node n : pNode.mChildren) {
+            for (FilterNode n : pNode.mChildren) {
                 sb.append(n);
             }
             return sb.toString();
@@ -54,18 +59,18 @@ public class JSDBFilter
 
 
 
-        private Node parse(String pPattern) throws JSDBException {
+        private FilterNode parse(String pPattern) throws JSDBException {
             int pos = 0;
             String tPattern = pPattern.trim();
             if (tPattern.charAt(0) != '(') {
                 throw new JSDBException("Invalid filter syntax, must start with '('");
             }
-            Node n = parse(pPattern.substring(1), 0);
+            FilterNode n = parse(pPattern.substring(1), 0);
             parseLogicalExpression(n);
             return n;
         }
 
-        private void parseLogicalExpression( Node n) {
+        private void parseLogicalExpression( FilterNode n) {
             Matcher m = FILTER_LOGIC_PATTERN.matcher(n.mData.toString().trim());
             if (m.find()) {
                 n.mLogic = FILTER_LOGIC.valueOf(n.mData.toString().trim().substring(m.regionStart(), m.regionEnd() - 1).toUpperCase());
@@ -73,26 +78,62 @@ public class JSDBFilter
                 n.mLogic = FILTER_LOGIC.$DATA;
             }
             //System.out.println(n);
-            for (Node cn : n.mChildren) {
+            for (FilterNode cn : n.mChildren) {
                 parseLogicalExpression( cn );
             }
         }
+        
+        
+        private boolean toPrimarFilter( JSDBCollection pCollection) throws JSDBException {
+            this.mRootNode = this.toPrimaryKeys(this.mRootNode, pCollection);
+            return (this.mRootNode != null) ? true : false;
+        }
 
+        private FilterNode toPrimaryKeys( FilterNode pNode, JSDBCollection pCollection) throws JSDBException
+        {
+            if ((pNode.mLogic == FILTER_LOGIC.$AND) || (pNode.mLogic == FILTER_LOGIC.$OR)) {
+                Iterator<FilterNode> tItr = pNode.mChildren.iterator();
+                while (tItr.hasNext()) {
+                    if (toPrimaryKeys(tItr.next(), pCollection) == null) {
+                        tItr.remove();
+                    }
+                }
+                if (pNode.mChildren.size() >= 2) {
+                    return pNode;
+                } else if (pNode.mChildren.size() == 1) {
+                    return pNode.mChildren.get(0);
+                }
+                return null;
+            } else {
+                FilterNode cn = pNode.mChildren.get(0);
+                return (pCollection.isKeyField(cn.getFieldId())) ? pNode : null;
+            }
+        }
+        
 
-       String createSqlFindStatement( JSDBCollection pCollection ) throws JSDBException
+       String createSqlHelperStatement( JSDBCollection pCollection ) throws JSDBException {
+           JSDBFilter tFilter = new JSDBFilter(this.getFilterString());
+           if(tFilter.toPrimarFilter(pCollection)) {
+               return "SELECT DATA FROM " + pCollection.mName + " WHERE " + tFilter.createSqlSelectStatement(pCollection) + ";";
+           }
+           return "SELECT DATA FROM " + pCollection.mName + ";";
+       }
+       
+
+       String createSqlSelectStatement( JSDBCollection pCollection ) throws JSDBException
        {
             String sql = createSqlSelectStatement( mRootNode, pCollection );
             return sql;
        }
 
-        private String createSqlSelectStatement( Node pNode, JSDBCollection pCollection ) throws JSDBException {
+        private String createSqlSelectStatement(FilterNode pNode, JSDBCollection pCollection ) throws JSDBException {
             if ((pNode.mLogic == FILTER_LOGIC.$AND) || (pNode.mLogic == FILTER_LOGIC.$OR)) {
                if (pNode.mChildren.size() < 2) {
                    throw new JSDBException("Invalid number of AND/OR arguments must be at least 2");
                }
                StringBuilder sb = new StringBuilder("( ");
                for (int i = 0; i < pNode.mChildren.size() - 1; i++) {
-                    Node cn = pNode.mChildren.get(i);
+                    FilterNode cn = pNode.mChildren.get(i);
                     if (cn.mLogic == FILTER_LOGIC.$DATA) {
                         throw new JSDBException("Invalid AND/OR argument, must not be a DATA node");
                     }
@@ -166,20 +207,20 @@ public class JSDBFilter
             return getDataFields(mRootNode);
         }
 
-        private List<String> getDataFields( Node pNode ) throws JSDBException {
+        private List<String> getDataFields( FilterNode pNode ) throws JSDBException {
             List<String> tFields = new ArrayList<>();
             if (pNode.mLogic == FILTER_LOGIC.$DATA) {
                 tFields.add( pNode.getFieldId());
             }
-            for (Node cn : pNode.mChildren) {
+            for (FilterNode cn : pNode.mChildren) {
                 tFields.addAll( getDataFields( cn ));
             }
             return tFields;
         }
 
-        private Node parse(String pPattern, int pLevel) throws JSDBException {
+        private FilterNode parse(String pPattern, int pLevel) throws JSDBException {
             char tWithInString = 0;
-            Node n = new Node(pLevel);
+            FilterNode n = new FilterNode(pLevel);
             int pos = 0, start = 1;
 
             try {
@@ -193,7 +234,7 @@ public class JSDBFilter
 
                     // Check if Node start
                     else if (pPattern.charAt(pos) == '(') {
-                        Node cn = parse(pPattern.substring(++pos), pLevel + 1);
+                        FilterNode cn = parse(pPattern.substring(++pos), pLevel + 1);
                         n.mChildren.add(cn);
                         pos += cn.mLength;
                     }
@@ -220,13 +261,13 @@ public class JSDBFilter
             return jsonMatch(jObject, this.mRootNode, new JsonTester());
         }
 
-        private boolean jsonMatch( JsonObject jObject, Node pNode, JsonTester jt) throws JSDBException {
+        private boolean jsonMatch(JsonObject jObject, FilterNode pNode, JsonTester jt) throws JSDBException {
             if ((pNode.mLogic == FILTER_LOGIC.$AND) || (pNode.mLogic == FILTER_LOGIC.$OR)) {
                 if (pNode.mChildren.size() < 2) {
                     throw new JSDBException("Invalid number of AND/OR arguments must be at least 2");
                 }
                 boolean tState = pNode.mLogic == FILTER_LOGIC.$AND;
-                for( Node cn : pNode.mChildren) {
+                for( FilterNode cn : pNode.mChildren) {
                     tState = jt.jsonTest( pNode.mLogic, tState, jsonMatch(jObject, cn, jt));
                 }
                 return tState;
@@ -291,18 +332,17 @@ public class JSDBFilter
         throw new RuntimeException("Invalid datatype  ");
     }
 
-
-        class Node
+        static class FilterNode
         {
             int mLevel;
             StringBuilder mData;
-            List<Node> mChildren;
+            List<FilterNode> mChildren;
             int mLength;
             FILTER_LOGIC mLogic;
             String mSqlCondition = null;
 
 
-            Node(int pLevel) {
+            FilterNode(int pLevel) {
                 mLevel = pLevel;
                 mData = new StringBuilder();
                 mChildren = new ArrayList<>();

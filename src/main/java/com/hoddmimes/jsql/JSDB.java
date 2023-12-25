@@ -32,7 +32,7 @@ public class JSDB
             SQLiteConfig tConfig = new SQLiteConfig();
             tConfig.setJournalMode(SQLiteConfig.JournalMode.WAL);
 
-            tConfig.setTempStore(SQLiteConfig.TempStore.MEMORY);
+            tConfig.setTempStore(SQLiteConfig.TempStore.DEFAULT);
             tConfig.setSynchronous(SQLiteConfig.SynchronousMode.NORMAL);
             tConfig.enforceForeignKeys(false);
             tConfig.enableCountChanges(false);
