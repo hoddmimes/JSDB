@@ -130,9 +130,11 @@ It's possible to specify fields in Json object substructures. The character "." 
 ```
 _The notation for addressing the field 'frotz' is equivalent to "foo.bar.frotz"_
 
-_Note!_ if a field specified is not a key in the collection. The filter needs to be matched agains all 
-JsonObjects in the collection, otherwise the SQL filter can be applied directly with better performance.
-
+_Note!_ if a field specified in a filter is not a key in the collection, the filter needs to be matched against the JSON object. 
+This requires that data in the collection needs to be converted from its internal representation i.e. Json string to a Json object
+in order to performe the matching. A worst case scenario is when the filter does not contain any collection key. Then all objects must be
+retrieved and unpacked for matching. However, if the filter contains collection key(s) the selction will be narrowed down to the collection key subset. 
+This can and will most like improve performance significantly.  
 
 
 

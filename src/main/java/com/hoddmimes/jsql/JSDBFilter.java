@@ -16,7 +16,7 @@ public class JSDBFilter
         static enum FILTER_LOGIC {$AND,$OR,$GT,$GTE,$LT,$LTE,$EQ,$LIKE,$NE,$DATA};
         private static final Pattern FILTER_LOGIC_PATTERN = Pattern.compile("(^\\$AND:|^\\$OR:|^\\$GT:|^\\$GTE:|^\\$LT:|^\\$LTE:|^\\$LIKE:|^\\$EQ:|^\\$NE:)", Pattern.CASE_INSENSITIVE);
         private static final Pattern FILTER_NAME_VALUE = Pattern.compile( "([\\w|\\.]+)\\s*,(.+)");
-        final private  String cFilterString;
+         private  String mFilterString;
 
         private FilterNode mRootNode;
 
@@ -35,12 +35,12 @@ public class JSDBFilter
         }
 
     public JSDBFilter( String pFilterString ) throws JSDBException {
-        cFilterString = pFilterString;
+        mFilterString = pFilterString;
         mRootNode = parse( pFilterString );
     }
     
     public String getFilterString() {
-            return cFilterString;
+      return mFilterString;
     }
 
         @Override
@@ -86,7 +86,31 @@ public class JSDBFilter
         
         private boolean toPrimarFilter( JSDBCollection pCollection) throws JSDBException {
             this.mRootNode = this.toPrimaryKeys(this.mRootNode, pCollection);
+            this.mFilterString = this.updateSqlString(this.mRootNode, pCollection);
             return (this.mRootNode != null) ? true : false;
+        }
+
+        private String updateSqlString( FilterNode pNode, JSDBCollection pCollection) throws JSDBException {
+            if ((pNode.mLogic == FILTER_LOGIC.$AND) || (pNode.mLogic == FILTER_LOGIC.$OR)) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("(" + pNode.mLogic.toString() + ": ");
+                for( FilterNode cn : pNode.mChildren ) {
+                    sb.append( updateSqlString( cn, pCollection ));
+                }
+                sb.append(")");
+                return sb.toString();
+            } else {
+                StringBuilder sb = new StringBuilder();
+                JSDBKey tKey = pCollection.getKey( pNode.mChildren.get(0).getFieldId());
+                FilterNode cn = pNode.mChildren.get(0);
+
+                sb.append("(" + pNode.mLogic.toString() + ": ");
+                if (tKey.getType() == String.class) {
+                    sb.append("(" + cn.getFieldId() + ", '" + cn.getFieldValue() + "'))");
+                } else
+                    sb.append("(" + cn.getFieldId() + ", " + cn.getFieldValue() + "))");
+                return sb.toString();
+            }
         }
 
         private FilterNode toPrimaryKeys( FilterNode pNode, JSDBCollection pCollection) throws JSDBException
