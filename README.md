@@ -20,8 +20,8 @@ Create a Database file in the location specified by the parameter _pSqlFile_
 Creates a Collection with keys specified by the parameter _pKeys_
 
 ```java
-&nbsp;&nbsp;&nbsp;&nbsp; public JSDBKey(String pId, Class pType, boolean pUnique, boolean pPrimaryKey)
- &nbsp;&nbsp;&nbsp;&nbsp;public JSDBKey(String pId, Class pType)
+     public JSDBKey(String pId, Class pType, boolean pUnique, boolean pPrimaryKey)
+     public JSDBKey(String pId, Class pType)
 ```
 
 ### Open Database
