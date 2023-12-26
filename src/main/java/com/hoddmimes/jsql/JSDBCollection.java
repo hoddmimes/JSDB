@@ -174,8 +174,8 @@ public class JSDBCollection {
     private int count() throws JSDBException {
         try {
             Statement stmt = mDbConnection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM " + this.mName + ";");
-            int tCount = rs.getInt("count");
+            ResultSet rs = stmt.executeQuery("SELECT count(*) as foo FROM " + this.mName + ";");
+            int tCount = rs.getInt("foo");
             return tCount;
 
         } catch (Exception e) {
@@ -207,7 +207,7 @@ public class JSDBCollection {
 
     private int deleteWithKeyLogic(JSDBFilter pFilter) throws JSDBException {
         // Filter based upon SQL keys
-        int tDeletedObjects = 0;
+        int tBeforeCount = this.count();
         String sqlSelectString = pFilter.createSqlSelectStatement(this);
         //System.out.println("select-sql: " + sqlSelectString);
         try {
@@ -216,7 +216,7 @@ public class JSDBCollection {
         } catch (Exception e) {
             throw new JSDBException(e.getMessage(), e);
         }
-        return tDeletedObjects;
+        return  tBeforeCount - this.count();
     }
 
     private String getKeysValues(JsonObject pObject ) throws JSDBException {
@@ -389,12 +389,12 @@ public class JSDBCollection {
         }
     }
 
-    public void delete( String pFilterString) throws JSDBException {
+    public int delete( String pFilterString) throws JSDBException {
         JSDBFilter tFilter = new JSDBFilter(pFilterString);
         if (onlyKeyField(tFilter)) {
-            deleteWithKeyLogic(tFilter);
+            return deleteWithKeyLogic(tFilter);
         }
-        deleteWithJsonTesterLogic(tFilter);
+        return deleteWithJsonTesterLogic(tFilter);
     }
 
 

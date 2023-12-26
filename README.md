@@ -19,6 +19,10 @@ Create a Database file in the location specified by the parameter _pSqlFile_
 ```
 Creates a Collection with keys specified by the parameter _pKeys_
 
+```java
+&nbsp;&nbsp;&nbsp;&nbsp; public JSDBKey(String pId, Class pType, boolean pUnique, boolean pPrimaryKey)
+ &nbsp;&nbsp;&nbsp;&nbsp;public JSDBKey(String pId, Class pType)
+```
 
 ### Open Database
 ```java
@@ -134,7 +138,7 @@ _Note!_ if a field specified in a filter is not a key in the collection, the fil
 This requires that data in the collection needs to be converted from its internal representation i.e. Json string to a Json object
 in order to performe the matching. A worst case scenario is when the filter does not contain any collection key. Then all objects must be
 retrieved and unpacked for matching. However, if the filter contains collection key(s) the selction will be narrowed down to the collection key subset. 
-This can and will most like improve performance significantly.  
+This can and most like will improve performance significantly.  
 
 
 

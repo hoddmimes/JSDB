@@ -24,6 +24,45 @@ public class PerformanceTest {
         t.test();
     }
 
+    private void test() {
+        createDatabase();
+        openDatabase();
+        loadDatabase( 100000 );
+        closeDatabase();
+        openDatabase();
+        findCount();
+
+        find( "($eq: (k1,250))", 1000 );
+        find( "($and: ($eq: (k1,250)) ($like: (k2,'%X%')))", 1000 );
+        find( "($and: ($and: ($lt: (k1,66000)) ($gt: (k1,65000))) ($eq: (intValue, 50)))", 100 );
+
+        insert_delete(1000);
+
+    }
+
+    private void insert_delete(int pCount){
+        long insertSum = 0, deleteSum = 0, sum = 0;
+        JsonObject jsonObject = createObject(123456, "vemodig", 987654, "ABCDEFGHJKLMNOPQRSTUVW");
+        try {
+            JSDBCollection tCollections = mDb.getCollections("TEST");
+            for (int i = 0; i < pCount; i++) {
+                long s = System.nanoTime();
+                tCollections.insert(jsonObject, false);
+                insertSum += (System.nanoTime() - s);
+
+                s = System.nanoTime();
+                sum += tCollections.delete("($and: ($eq: (k1, 123456)) ($eq: (k2,'vemodig')))");
+                insertSum += (System.nanoTime() - s);
+            }
+        }
+        catch( JSDBException e) {
+            e.printStackTrace();
+        }
+        System.out.println("delete-insert [" + sum + "] Avg insert " + (insertSum / (pCount * 1000L)) + " usec  Avg delete " + (deleteSum / (pCount * 1000L)) + " usec");
+    }
+
+
+
     private JsonObject createObject(int k1, String k2,  int pIntValue, String pStrValue ) {
         JsonObject jSub  = new JsonObject();
 
@@ -62,20 +101,7 @@ public class PerformanceTest {
         return sb.toString();
     }
 
-    private void test() {
-        createDatabase();
-        openDatabase();
-        loadDatabase( 100000 );
-        closeDatabase();
-        //find( "($gt: (k1, 970))", 2000 );
-        //find( "($and: ($gte: (k1,250)) ($eq: (k2,'XYZ')))", 2000 );
-        openDatabase();
-        findCount();
-        //find( "($eq: (k1,250))", 1000 );
-        //find( "($and: ($eq: (k1,250)) ($like: (k2,'%X%')))", 1000 );
-        find( "($and: ($and: ($lt: (k1,66000)) ($gt: (k1,65000))) ($eq: (intValue, 50)))", 100 );
 
-    }
 
 
     private void findCount() {
