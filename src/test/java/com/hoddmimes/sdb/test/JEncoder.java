@@ -49,7 +49,7 @@ public class JEncoder extends JCodec
     private void ensureCapacity( String pKey, int pSize) {
         ByteBuffer tBuffer = null;
 
-        int tSize = ((pKey != null) ? pKey.length() : 0) + Integer.BYTES + pSize;
+        int tSize = ((pKey != null) ? pKey.length() : 0) + Byte.BYTES + pSize;
 
         if (mBuffer.remaining() < tSize) {
             if (tSize > 1024) {

@@ -15,13 +15,13 @@ public class TestCodec
         TestCodec t = new TestCodec();
         t.test();
         t.testJencoder( 10000 );
-        t.testJencoder( 1000000 );
+        t.testJencoder( 10000000 );
         t.testStringEncoder( 10000 );
-        t.testStringEncoder( 1000000 );
+        t.testStringEncoder( 10000000 );
         t.testJdecoder( 10000 );
-        t.testJdecoder( 1000000 );
+        t.testJdecoder( 10000000 );
         t.testStringDecoder( 10000 );
-        t.testStringDecoder( 1000000 );
+        t.testStringDecoder( 10000000 );
 
 
     }

@@ -25,14 +25,14 @@ public class JDecoder extends JCodec
             String tKey = getKey();
 
             switch (tType) {
-                case TYPE_BYTE -> jObject.addProperty(tKey, getByte());
-                case TYPE_SHORT -> jObject.addProperty(tKey, getShort());
-                case TYPE_INT -> jObject.addProperty(tKey, getInt());
-                case TYPE_LONG -> jObject.addProperty(tKey, getLong());
-                case TYPE_FLOAT -> jObject.addProperty(tKey, getFloat());
-                case TYPE_DOUBLE -> jObject.addProperty(tKey, getDouble());
-                case TYPE_BOOLEAN -> jObject.addProperty(tKey, getBoolean());
-                case TYPE_STRING -> jObject.addProperty(tKey, getString());
+                case TYPE_BYTE -> jObject.add(tKey, new JsonPrimitive(getByte()));
+                case TYPE_SHORT -> jObject.add(tKey, new JsonPrimitive(getShort()));
+                case TYPE_INT -> jObject.add(tKey, new JsonPrimitive(getInt()));
+                case TYPE_LONG -> jObject.add(tKey, new JsonPrimitive(getLong()));
+                case TYPE_FLOAT -> jObject.add(tKey, new JsonPrimitive(getFloat()));
+                case TYPE_DOUBLE -> jObject.add(tKey, new JsonPrimitive(getDouble()));
+                case TYPE_BOOLEAN -> jObject.add(tKey, new JsonPrimitive(getBoolean()));
+                case TYPE_STRING -> jObject.add(tKey, new JsonPrimitive(getString()));
                 case TYPE_NULL -> jObject.add(tKey, JsonNull.INSTANCE);
                 case TYPE_OBJECT -> jObject.add( tKey, getObject());
                 case TYPE_ARRAY -> jObject.add(tKey, getArray());
@@ -65,10 +65,10 @@ public class JDecoder extends JCodec
     }
 
     private String getString() {
-        int tSize = getShort();
-        byte[] tBuffer  = new byte[ tSize ];
-        mBuffer.get( tBuffer );
-        return new String( tBuffer, StandardCharsets.UTF_8);
+        int tSize = mBuffer.getShort();
+        String tStr = new String( mBuffer.array(), mBuffer.position(), tSize, StandardCharsets.UTF_8 );
+        mBuffer.position( tSize + mBuffer.position() );
+        return tStr;
     }
 
     private JsonObject getObject() {
@@ -121,9 +121,9 @@ public class JDecoder extends JCodec
         if (tSize == 0) {
             return null;
         }
-        byte[] tStrBuf = new byte[ tSize ];
-        mBuffer.get( tStrBuf );
-        return new String( tStrBuf, StandardCharsets.UTF_8 );
+        String tStr = new String( mBuffer.array(), mBuffer.position(), tSize, StandardCharsets.UTF_8 );
+        mBuffer.position( tSize + mBuffer.position() );
+        return tStr;
     }
 
 }
