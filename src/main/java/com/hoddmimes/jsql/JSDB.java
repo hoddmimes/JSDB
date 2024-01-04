@@ -11,7 +11,7 @@ import java.util.List;
 public class JSDB
 {
     private Connection mDbConnection = null;
-    static final boolean USE_JCODEC = true;
+    static final boolean USE_JCODEC = false;
 
 
     public JSDB() {
