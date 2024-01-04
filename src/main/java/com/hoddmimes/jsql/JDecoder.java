@@ -1,4 +1,4 @@
-package com.hoddmimes.sdb.test;
+package com.hoddmimes.jsql;
 
 
 
@@ -6,7 +6,6 @@ import com.google.gson.*;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
 public class JDecoder extends JCodec
 {

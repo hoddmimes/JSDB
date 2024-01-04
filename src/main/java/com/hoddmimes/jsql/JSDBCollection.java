@@ -15,7 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class JSDBCollection {
-    private Connection mDbConnection;
+    Connection mDbConnection;
     static final String COL_SQL_DATA = "DATA";
     static final String COL_SQL_NAME = "NAME";
     static final String COL_SQL_TABLE = "JSQL_COLLECTIONS";
@@ -23,10 +23,53 @@ public class JSDBCollection {
     JSDBKey[] mKeys; // Note that first key is primary key
     String mName; // Collection name a.k.a SQL Table
 
-    JSDBCollection(Connection pDbConnection, String pName, JSDBKey[] pKeys) {
+    JStatementInsert stmtInsert;
+    JStatementInsertUpdate stmtInsertUpdate;
+    JStatementUpdate stmtUpdate;
+    JStatementUpdateInsert stmtUpdateInsert;
+
+     JSDBCollection(Connection pDbConnection, String pName, JSDBKey[] pKeys, boolean pPrepareStatement) {
         mKeys = pKeys;
         mName = pName;
         mDbConnection = pDbConnection;
+        if (pPrepareStatement) {
+            createPreparedStatements();
+        }
+    }
+
+    JSDBCollection(Connection pDbConnection, String pName, JSDBKey[] pKeys ) {
+        this( pDbConnection, pName, pKeys, true);
+    }
+
+
+    void createPreparedStatements() {
+        try {
+            stmtInsertUpdate = new JStatementInsertUpdate( this );
+            stmtUpdate = new JStatementUpdate( this);
+            stmtUpdateInsert = new JStatementUpdateInsert( this );
+            stmtInsert = new JStatementInsert(this);
+        }
+        catch( JSDBException e ) {
+            throw new RuntimeException( e.getMessage(), e );
+        }
+    }
+
+    protected String buildPrepareParameters() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < mKeys.length; i++) {
+            sb.append("?, ");
+        }
+        sb.append("?");
+        return sb.toString();
+    }
+
+    protected String buildPrepareSelectParameters() {
+        StringBuilder sb = new StringBuilder();
+        sb.append( mKeys[0].getId() + " = ?");
+        for (int i = 1; i < mKeys.length; i++) {
+            sb.append(" AND " + mKeys[i].getId() + " = ?");
+        }
+        return sb.toString();
     }
 
     String getKeyList() {
@@ -34,6 +77,7 @@ public class JSDBCollection {
         for (JSDBKey k : mKeys) {
             sb.append(k.getId() + ", ");
         }
+        sb.append( JSDBCollection.COL_SQL_DATA);
         return sb.toString();
     }
 
@@ -82,6 +126,14 @@ public class JSDBCollection {
         return sb.toString();
     }
 
+    private JsonObject decode( byte[] jByteBuffer) {
+        if (JSDB.USE_JCODEC) {
+            JDecoder jDecoder = new JDecoder();
+            return jDecoder.decode( jByteBuffer );
+        } else {
+            return JsonParser.parseString( new String(jByteBuffer, StandardCharsets.UTF_8) ).getAsJsonObject();
+        }
+    }
 
 
 
@@ -129,7 +181,7 @@ public class JSDBCollection {
             ResultSet rs = stmt.executeQuery(sql);
             List<JsonObject> tResult = new ArrayList<JsonObject>();
             while (rs.next()) {
-                JsonObject jObject = JsonParser.parseString(new String(rs.getBytes(JSDBCollection.COL_SQL_DATA), StandardCharsets.UTF_8)).getAsJsonObject();
+                JsonObject jObject = decode(rs.getBytes(JSDBCollection.COL_SQL_DATA));
                 if (pFilter.jsonMatch(jObject)) {
                     tResult.add(jObject);
                 }
@@ -163,7 +215,7 @@ public class JSDBCollection {
             ResultSet rs = stmt.executeQuery("SELECT " + JSDBCollection.COL_SQL_DATA + " FROM " + this.mName + " WHERE " + sqlSelectString + ";");
             List<JsonObject> tResult = new ArrayList<JsonObject>();
             while (rs.next()) {
-                tResult.add(JsonParser.parseString(new String(rs.getBytes(JSDBCollection.COL_SQL_DATA), StandardCharsets.UTF_8)).getAsJsonObject());
+                tResult.add(decode(rs.getBytes(JSDBCollection.COL_SQL_DATA)));
             }
             return tResult;
         } catch (Exception e) {
@@ -174,8 +226,8 @@ public class JSDBCollection {
     private int count() throws JSDBException {
         try {
             Statement stmt = mDbConnection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT count(*) as foo FROM " + this.mName + ";");
-            int tCount = rs.getInt("foo");
+            ResultSet rs = stmt.executeQuery("SELECT count(*) as rowcount FROM " + this.mName + ";");
+            int tCount = rs.getInt("rowcount");
             return tCount;
 
         } catch (Exception e) {
@@ -192,7 +244,7 @@ public class JSDBCollection {
             List<JsonObject> tResult = new ArrayList<JsonObject>();
 
             while (rs.next()) {
-                JsonObject jObject = JsonParser.parseString(new String(rs.getBytes(JSDBCollection.COL_SQL_DATA), StandardCharsets.UTF_8)).getAsJsonObject();
+                JsonObject jObject = decode(rs.getBytes(JSDBCollection.COL_SQL_DATA));
                 if (pFilter.jsonMatch(jObject)) {
                     stmt = mDbConnection.createStatement();
                     boolean sts = stmt.execute("DELETE FROM " + this.mName + " WHERE ( " + getKeysValues( jObject ) + ");");
@@ -255,7 +307,7 @@ public class JSDBCollection {
             ResultSet rs = stmt.executeQuery("SELECT " + JSDBCollection.COL_SQL_DATA + " FROM " + this.mName + " WHERE " + sqlSelectString + ";");
             List<JsonObject> tResult = new ArrayList<JsonObject>();
             while (rs.next()) {
-                JsonObject jObject = JsonParser.parseString(new String(rs.getBytes(JSDBCollection.COL_SQL_DATA), StandardCharsets.UTF_8)).getAsJsonObject();
+                JsonObject jObject = decode(rs.getBytes(JSDBCollection.COL_SQL_DATA));
                 traverseAndUpdate(pDeltaObject, jObject);
                 tUpdatedObjects++;
             }
@@ -274,7 +326,7 @@ public class JSDBCollection {
             List<JsonObject> tResult = new ArrayList<JsonObject>();
 
             while (rs.next()) {
-                JsonObject jObject = JsonParser.parseString(new String(rs.getBytes(JSDBCollection.COL_SQL_DATA), StandardCharsets.UTF_8)).getAsJsonObject();
+                JsonObject jObject = decode(rs.getBytes(JSDBCollection.COL_SQL_DATA));
                 if (pFilter.jsonMatch(jObject)) {
                     traverseAndUpdate( pDeltaObject, jObject );
                     this.update(jObject);
@@ -301,8 +353,7 @@ public class JSDBCollection {
             ResultSet rs = stmt.executeQuery(sql);
             while (rs.next() && tResult.size() < pMaxElements) {
                 if (tCount >= pOffset) {
-                    String jsonString = new String(rs.getBytes(COL_SQL_DATA), StandardCharsets.UTF_8);
-                    tResult.add(JsonParser.parseString(jsonString).getAsJsonObject());
+                    tResult.add(decode(rs.getBytes(JSDBCollection.COL_SQL_DATA)));
                     if (tResult.size() >= pMaxElements) {
                         return tResult;
                     }
@@ -331,14 +382,13 @@ public class JSDBCollection {
     public void insert(JsonObject pObject, boolean pUpdate) throws JSDBException {
         try {
             this.verifyKeys(pObject);
-            String sql = null;
             if (pUpdate) {
-                sql = "INSERT OR REPLACE INTO " + this.mName + " ( " + this.getKeyList() + "DATA ) VALUES ( " + this.getValues(pObject) + ")";
+                stmtInsertUpdate.setParameters(pObject);
+                stmtInsertUpdate.executeUpdate();
             } else {
-                sql = "INSERT INTO " + this.mName + " ( " + this.getKeyList() + "DATA ) VALUES ( " + this.getValues(pObject) + ")";
+                stmtInsert.setParameters(pObject);
+                stmtInsert.executeUpdate();
             }
-            Statement stmt = mDbConnection.createStatement();
-            int sts = stmt.executeUpdate(sql);
         } catch (Exception e) {
             throw new JSDBException(e.getMessage(), e);
         }
@@ -359,17 +409,16 @@ public class JSDBCollection {
 
 
 
-    public void update(JsonObject pObject, boolean insert) throws JSDBException {
+    public int update(JsonObject pObject, boolean insert) throws JSDBException {
         try {
             this.verifyKeys(pObject);
-            String sql = null;
             if (insert) {
-                sql = "INSERT OR REPLACE INTO " + this.mName + " ( " + this.getKeyList() + "DATA ) VALUES ( " + this.getValues(pObject) + ")";
+                stmtUpdateInsert.setParameters(pObject);
+                return stmtUpdateInsert.executeUpdate();
             } else {
-                sql = "UPDATE " + this.mName + " SET " + JSDBCollection.COL_SQL_DATA + " = '" + pObject  + "' WHERE ( " + this.getKeysValues( pObject) + " );";
+                stmtUpdate.setParameters(pObject);
+                return stmtUpdate.executeUpdate();
             }
-            Statement stmt = mDbConnection.createStatement();
-            int sts = stmt.executeUpdate(sql);
         } catch (Exception e) {
             throw new JSDBException(e.getMessage(), e);
         }

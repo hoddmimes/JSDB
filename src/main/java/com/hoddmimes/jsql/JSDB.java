@@ -1,11 +1,9 @@
 package com.hoddmimes.jsql;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+;
 import org.sqlite.SQLiteConfig;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +11,12 @@ import java.util.List;
 public class JSDB
 {
     private Connection mDbConnection = null;
+    static final boolean USE_JCODEC = true;
 
 
+    public JSDB() {
+
+    }
     public void openDatabase( String pSqlFile) throws JSDBException {
         String url = "jdbc:sqlite:" + pSqlFile;
 
@@ -51,7 +53,7 @@ public class JSDB
         }
     }
 
-    public static void createDatabase(String pSqlFile) throws JSDBException {
+    public void createDatabase(String pSqlFile) throws JSDBException {
         String url = "jdbc:sqlite:" + pSqlFile;
 
         File dbFile = new File( pSqlFile );
@@ -59,15 +61,15 @@ public class JSDB
             throw new JSDBException("Database file" + pSqlFile + " already exists");
         }
 
+
         try {
-            Connection tDbConnection = DriverManager.getConnection(url);
-            if (tDbConnection != null) {
-                createCollectionTables( tDbConnection);
-                tDbConnection.close();
+            mDbConnection = DriverManager.getConnection(url);
+            if (mDbConnection != null) {
+                createCollectionTables( mDbConnection);
             }
 
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            throw new JSDBException(e);
         }
     }
 
@@ -127,7 +129,7 @@ public class JSDB
         if (checkIfCollectionExists( pName )){
             throw new JSDBException("Collection \"" + pName + "\" already exists");
         }
-        JSDBCollection tCollection = new JSDBCollection( this.mDbConnection, pName, pKeys );
+        JSDBCollection tCollection = new JSDBCollection( this.mDbConnection, pName, pKeys, false );
 
         sql.append("CREATE TABLE " + pName + "( ");
         for( JSDBKey k : pKeys ) {
@@ -147,6 +149,7 @@ public class JSDB
             Statement stmt = mDbConnection.createStatement();
             // create a new table
             stmt.execute(sql.toString());
+            tCollection.createPreparedStatements();
         }
         catch (SQLException e){
             throw new JSDBException(e.getMessage(), e);
@@ -170,6 +173,7 @@ public class JSDB
             }
         }
         saveCollection( tCollection );
+        tCollection.createPreparedStatements();
         return tCollection;
     }
 
@@ -189,7 +193,8 @@ public class JSDB
             while(tResultkeys.next()) {
                 tKeys.add( new JSDBKey(tResultkeys));
             }
-            return new JSDBCollection( this.mDbConnection, pName, tKeys.toArray(new JSDBKey[0]));
+            tCollection = new JSDBCollection( this.mDbConnection, pName, tKeys.toArray(new JSDBKey[0]));
+            return tCollection;
         }
         catch (SQLException e){
             throw new JSDBException(e.getMessage(), e);
@@ -213,7 +218,9 @@ public class JSDB
                 while(tResultkeys.next()) {
                     tKeys.add( new JSDBKey(tResultkeys));
                 }
-                tCollections.add( new JSDBCollection( this.mDbConnection, tName,tKeys.toArray(new JSDBKey[0])));
+                JSDBCollection tCollection =  new JSDBCollection( this.mDbConnection, tName,tKeys.toArray(new JSDBKey[0]));
+                tCollection.createPreparedStatements();
+                tCollections.add( tCollection);
             }
         }
         catch (SQLException e){

@@ -1,6 +1,8 @@
 package com.hoddmimes.sdb.test;
 
 import com.google.gson.*;
+import com.hoddmimes.jsql.JDecoder;
+import com.hoddmimes.jsql.JEncoder;
 
 import java.util.Random;
 

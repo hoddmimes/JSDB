@@ -163,9 +163,8 @@ public class PerformanceTest {
             }
         }
         try {
-            JSDB.createDatabase(DB_FILE);
             JSDB tDb = new JSDB();
-            tDb.openDatabase(DB_FILE);
+            tDb.createDatabase(DB_FILE);
 
             tDb.createCollection("TEST",
                     new JSDBKey("k1", Integer.class, true, true ),

@@ -1,4 +1,4 @@
-package com.hoddmimes.sdm.test;
+package com.hoddmimes.sdb.test;
 
 import com.google.gson.JsonObject;
 import com.hoddmimes.jsql.JSDBCollection;
@@ -139,6 +139,7 @@ public class TestDB
         JSDB db = new JSDB();
         try {
             db.createDatabase(DB_NAME);
+
 
             db.createCollection("TEST",
                                 new JSDBKey("k1", Long.class),

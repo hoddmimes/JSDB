@@ -1,4 +1,4 @@
-package com.hoddmimes.sdb.test;
+package com.hoddmimes.jsql;
 
 
 
