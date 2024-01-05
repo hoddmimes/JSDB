@@ -142,10 +142,10 @@ This can and most like will improve performance significantly.
 
 ## Coding of JsonObject
 
-By default, JsonObjects are encoded as strings when kept in the database. Encoding/decoding of JsonObjects are superzingly fast but when fiding objects with filters 
-having attributes not being keys in the database many  objects may be required to be decoded in order to the filtering. It could be several thousends. 
-This is of cause fairly slow. But by using DB keys when being part a filter and _using an alternative coding of JsonObjects performance are improved_.
+By default, JsonObjects are encoded as strings when kept in the database. Encoding/decoding of JsonObjects are surprisingly fast but when fiding objects with filters 
+having attributes not being keys in the database, many objects may be required to be decoded in order to the filtering, it could be several thousends. 
+This is of cause takes a fair bit of time. But by using the DB keys, if any when being part a filter and _using an alternative coding of JsonObjects performance is improved_.
 
 The alternative codec, JCodec is a binary coding of objects and is approximately 3-4 times faster than the pure String encoding of the JsonObjects.
-By default String encoding is enabled. To change see JSDB.USE_JCODEC variable in the file JSDB.java.
+By default String encoding is enabled. To change the encoding see JSDB.USE_JCODEC variable in the file JSDB.java.
 
